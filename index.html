@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmaceutical Management System</title>
+    <style>
+        /* General Styling */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        /* Form Styling */
+        form {
+            background-color: #ffffff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, button, select {
+            margin: 10px 0;
+            padding: 12px;
+            width: calc(100% - 20px);
+            max-width: 400px;
+            display: block;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        td {
+            background-color: #f9f9f9;
+        }
+        
+        /* Expiry Date Styling (Month/Year) */
+        input[type="month"] {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            margin-bottom: 20px;
+        }
+        .search-bar input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        /* Card Design */
+        .medicine-card {
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+        }
+        .medicine-card h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .medicine-card p {
+            margin: 5px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pharmaceutical Management System</h1>
+
+        <!-- Form for Adding New Medicine -->
+        <h2>Add New Medicine</h2>
+        <form id="medicine-form">
+            <input type="text" id="name" placeholder="Medicine Name" required />
+            <input type="number" id="price" placeholder="Price" required />
+            <input type="number" id="quantity" placeholder="Quantity" required />
+            <input type="month" id="expiry_date" required /> <!-- Month/Year picker -->
+            <button type="submit">Add Medicine</button>
+        </form>
+
+        <!-- Search Bar -->
+        <h2>Search Medicines</h2>
+        <div class="search-bar">
+            <input type="text" id="search-medicine" placeholder="Search by medicine name..." onkeyup="searchMedicine()" />
+        </div>
+
+        <!-- Medicine List -->
+        <h2>Medicine List</h2>
+        <table id="medicine-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Expiry Date (MM/YYYY)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Fetch and display medicines
+        function loadMedicines() {
+            fetch('/medicines')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.querySelector('#medicine-table tbody');
+                    table.innerHTML = ''; // Clear existing rows
+                    data.forEach(medicine => {
+                        const expiryDate = new Date(medicine.expiry_date);
+                        const formattedExpiry = `${expiryDate.getMonth() + 1}/${expiryDate.getFullYear()}`;
+
+                        const row = `<tr>
+                            <td>${medicine.name}</td>
+                            <td>${medicine.price}</td>
+                            <td>${medicine.quantity}</td>
+                            <td>${formattedExpiry}</td>
+                        </tr>`;
+                        table.innerHTML += row;
+                    });
+                });
+        }
+
+        // Add new medicine
+        document.getElementById('medicine-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const price = document.getElementById('price').value;
+            const quantity = document.getElementById('quantity').value;
+            const expiry_date = document.getElementById('expiry_date').value;
+
+            fetch('/add-medicine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, price, quantity, expiry_date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                loadMedicines(); // Reload the medicine list
+            });
+        });
+
+        // Search for medicines
+        function searchMedicine() {
+            const input = document.getElementById('search-medicine').value.toLowerCase();
+            const rows = document.querySelectorAll('#medicine-table tbody tr');
+
+            rows.forEach(row => {
+                const medicineName = row.cells[0].innerText.toLowerCase();
+                if (medicineName.includes(input)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Load medicines on page load
+        loadMedicines();
+    </script>
+</body>
+</html>
